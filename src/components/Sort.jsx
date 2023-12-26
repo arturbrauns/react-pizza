@@ -1,24 +1,48 @@
 import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { setSort } from "../redux/slices/filterSlice";
 
-function Sort({ value, onChangeSort }) {
+// Создаем массив объектов для использования в pop-up, чтобы создать сортировку
+export const list = [
+  { name: "популярности (DESC)", sortProperty: "rating" },
+  { name: "популярности (ASC)", sortProperty: "-rating" },
+  { name: "цена (DESC)", sortProperty: "price" },
+  { name: "цена (ASC)", sortProperty: "-price" },
+  { name: "алфавиту (DESC)", sortProperty: "title" },
+  { name: "алфавиту (ASC)", sortProperty: "-title" },
+];
+
+function Sort() {
+  const dispatch = useDispatch();
+  const sort = useSelector((state) => state.filter.sort);
+  const sortRef = React.useRef();
+
+  // Создаем состояние pop-up окна, начальное значение которого false(окно закрыто)
   const [open, setOpen] = React.useState(false);
 
-  const list = [
-    { name: "популярности (DESC)", sortProperty: "rating" },
-    { name: "популярности (ASC)", sortProperty: "-rating" },
-    { name: "цена (DESC)", sortProperty: "price" },
-    { name: "цена (ASC)", sortProperty: "-price" },
-    { name: "алфавиту (DESC)", sortProperty: "title" },
-    { name: "алфавиту (ASC)", sortProperty: "-title" },
-  ];
-
-  const onClickListItem = (i) => {
-    onChangeSort(i);
+  // Создаем функцию для выбора метода сортировки, а так же для открытия и скрытия pop-up
+  // После того, как тип сортировки был выбран, закрой pop-up
+  const onClickListItem = (obj) => {
+    dispatch(setSort(obj));
     setOpen(!open);
   };
 
+  React.useEffect(() => {
+    const hadleClickOutside = (event) => {
+      if (!event.composedPath().includes(sortRef.current)) {
+        setOpen(false);
+      }
+    };
+
+    document.body.addEventListener("click", hadleClickOutside);
+
+    return () => {
+      document.body.removeEventListener("click", hadleClickOutside);
+    };
+  }, []);
+
   return (
-    <div className="sort">
+    <div ref={sortRef} className="sort">
       <div className="sort__label">
         <svg
           width="10"
@@ -33,8 +57,12 @@ function Sort({ value, onChangeSort }) {
           ></path>
         </svg>
         <b>Сортировка по:</b>
-        <span onClick={() => setOpen(!open)}>{value.name}</span>
+        <span onClick={() => setOpen(!open)}>{sort.name}</span>
       </div>
+
+      {/* Если состояние open = true(pop-up открыт), тогда выполни код далее */}
+      {/* Обойди массив объектов для pop-up и для каждого элемента создай li, в который будет передаваться объект текущего элемента и индекс.
+      Индекс используется для key...  */}
       {open && (
         <div className="sort__popup">
           <ul>
@@ -43,7 +71,7 @@ function Sort({ value, onChangeSort }) {
                 key={i}
                 onClick={() => onClickListItem(obj)}
                 className={
-                  value.sortProperty === obj.sortProperty ? "active" : ""
+                  sort.sortProperty === obj.sortProperty ? "active" : ""
                 }
               >
                 {obj.name}
